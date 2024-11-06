@@ -1,0 +1,2 @@
+# internship_project
+ This project offers a web  platform that allows users to monitor their vital health parameters (heart rate, blood pressure, oxygen levels) via smart devices. By integrating AI for data analysis, the platform provides diagnostic recommendations and real-time alerts for healthcare professionals and individuals. The objective is to improve care delivery in underserved areas and facilitate self-monitoring.
