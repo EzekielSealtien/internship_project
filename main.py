@@ -8,6 +8,8 @@ if page == "profile":
     view.show_profile_page()
 elif page == "signup":
     view.show_signup_page()
+elif page == "home":
+    view.show_home_page()
 else:
     view.show_login_page()
 

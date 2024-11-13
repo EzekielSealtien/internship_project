@@ -113,7 +113,7 @@ def get_doctor_info_by_user_id(user_id: int):
 
 
 # Route to get all users assigned to a doctor  
-@app.get("/doctors/get_users_by_doctor/{doctor_id}", response_model=List[cmd.UserFullInfo])
+@app.get("/doctors/get_users_by_doctor/{doctor_id}")
 def get_users_by_doctor(doctor_id: int):
     try:
         users_info = cmd.get_user_details_by_doctor(doctor_id)

@@ -5,12 +5,19 @@ from typing import List, Optional
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
+
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Load environment variables
-DB_NAME = os.getenv("DB_NAME", "intershipDB")
-DB_USER = os.getenv("DB_USER", "postgres")
-
-DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
 
 def create_connection():
     """
@@ -72,7 +79,6 @@ class Health_data(BaseModel):
     blood_pressure: int
     oxygen_level: int
     temperature: int
-    user_id:int
 
 class Health_dataRespons(Health_data):
     data_id: int
@@ -206,7 +212,7 @@ def get_user_full_info(email: str):
             cursor.execute(
                 """
                 SELECT 
-                    u.user_id, u.name, u.email, u.password_hash, u.phone_number, u.date_of_birth, u.doctor_id,
+                    u.user_id, u.name, u.email, u.password_hash, u.phone_number, u.date_of_birth, d.doctor_id,d.name as doctor_name,d.email as doctor_email,d.specialization,d.phone_number as doctor_phone_number,
                     h.heart_rate, h.blood_pressure, h.oxygen_level, h.temperature,
                     r.id_recommendations, r.message AS recommendation_message,
                     a.alert_id, a.alert_type, a.message AS alert_message, a.status
@@ -214,6 +220,7 @@ def get_user_full_info(email: str):
                 LEFT JOIN health_data h ON u.user_id = h.user_id
                 LEFT JOIN recommendations r ON u.user_id = r.user_id
                 LEFT JOIN alerts a ON u.user_id = a.user_id
+                LEFT JOIN doctors d ON u.doctor_id = d.doctor_id            
                 WHERE u.email = %s
                 """,
                 (email,)
@@ -232,6 +239,13 @@ def get_user_full_info(email: str):
                 "phone_number": rows[0]["phone_number"],
                 "date_of_birth": rows[0]["date_of_birth"],
                 "doctor_id": rows[0]["doctor_id"],
+                "doctor_name": rows[0]["doctor_name"],
+                "doctor_specialization": rows[0]["specialization"],
+                "doctor_phone_number": rows[0]["doctor_phone_number"],
+                "doctor_email": rows[0]["doctor_email"],
+
+
+
                 "health_data": {
                     "heart_rate": rows[0]["heart_rate"],
                     "blood_pressure": rows[0]["blood_pressure"],
@@ -325,17 +339,17 @@ def doctor_info(doctor_email):
     finally:
         cursor.close()
         
-# Retrieve all the users' info of a doctor
+# Retrieve all the users' info of a doctor, along with their health data and alerts
 def get_user_details_by_doctor(doctor_id: int):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Fetch all users along with their health data and alerts using JOINs
+            # Query to fetch users assigned to a specific doctor with JOINs for health data and alerts
             cursor.execute(
                 """
                 SELECT 
                     u.user_id, u.name, u.email, u.phone_number, u.date_of_birth, u.doctor_id,
                     h.heart_rate, h.blood_pressure, h.oxygen_level, h.temperature,
-                    a.alert_type, a.message, a.status
+                    a.alert_id, a.alert_type, a.message AS alert_message, a.status
                 FROM users u
                 LEFT JOIN health_data h ON u.user_id = h.user_id
                 LEFT JOIN alerts a ON u.user_id = a.user_id
@@ -343,10 +357,47 @@ def get_user_details_by_doctor(doctor_id: int):
                 """,
                 (doctor_id,)
             )
+            
+            rows = cursor.fetchall()
 
-            # Fetch all the results
-            results = cursor.fetchall()
-            return results
+            # If no patients found, return None
+            if not rows:
+                return None
+
+            # Grouping patients' data
+            patients = {}
+            for row in rows:
+                user_id = row["user_id"]
+                
+                # Initialize a new patient entry if it doesn't exist
+                if user_id not in patients:
+                    patients[user_id] = {
+                        "user_id": user_id,
+                        "name": row["name"],
+                        "email": row["email"],
+                        "phone_number": row["phone_number"],
+                        "date_of_birth": row["date_of_birth"],
+                        "health_data": {
+                            "heart_rate": row["heart_rate"],
+                            "blood_pressure": row["blood_pressure"],
+                            "oxygen_level": row["oxygen_level"],
+                            "temperature": row["temperature"]
+                        },
+                        "alerts": []
+                    }
+
+                # Add alerts if they exist
+                alert_id = row["alert_id"]
+                if alert_id:
+                    patients[user_id]["alerts"].append({
+                        "alert_id": alert_id,
+                        "alert_type": row["alert_type"],
+                        "message": row["alert_message"],
+                        "status": row["status"]
+                    })
+
+            # Return the list of patients with their full information
+            return list(patients.values())
 
     except Exception as e:
         print(f"Error retrieving user details: {e}")
