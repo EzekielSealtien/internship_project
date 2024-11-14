@@ -484,9 +484,9 @@ def update_alert(alert_id: int, updated_alert: Alerts):
         conn.rollback()
         return None
 
-def update_recommendation(id_recommendations: int, updated_recommendation: dict):
+def update_recommendation(id_recommendations: int, updated_recommendation: recommendation):
     try:
-        with conn.cursor() as cursor:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """
                 UPDATE recommendations
@@ -495,14 +495,15 @@ def update_recommendation(id_recommendations: int, updated_recommendation: dict)
                 RETURNING id_recommendations, message, doctor_report, alert_id, user_id
                 """,
                 (
-                    updated_recommendation['message'],
-                    updated_recommendation.get('doctor_report'),
-                    updated_recommendation['alert_id'],
-                    updated_recommendation['user_id'],
+                    updated_recommendation.message,
+                    updated_recommendation.doctor_report,
+                    updated_recommendation.alert_id,
+                    updated_recommendation.user_id,
                     id_recommendations
                 )
             )
             updated_rec = cursor.fetchone()
+            print(f"---->{updated_rec}")
             conn.commit()
             return updated_rec
     except Exception as e:

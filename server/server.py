@@ -84,7 +84,7 @@ def create_recommendation(recommendation: cmd.recommendation):
     
     
 # Route to update an alert  
-@app.put("/user/update_alert/{alert_id}", response_model=Optional[cmd.AlertsResponse])
+@app.put("/user/update_alert/{alert_id}")
 def update_alert(alert_id: int, updated_alert: cmd.Alerts):
     try:
         updated_alert_record = cmd.update_alert(alert_id, updated_alert)
@@ -94,7 +94,7 @@ def update_alert(alert_id: int, updated_alert: cmd.Alerts):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating alert: {str(e)}")
 
-@app.put("/user/update_recommendation/{id_recommendations}", response_model=Optional[cmd.recommendationResponse])
+@app.put("/user/update_recommendation/{id_recommendations}")
 def update_recommendation(id_recommendations: int, updated_recommendation: cmd.recommendation):
     try:
         updated_recommendation_record = cmd.update_recommendation(id_recommendations, updated_recommendation)

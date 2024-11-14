@@ -90,16 +90,13 @@ def show_home_page():
                     alerts = patient.get("alerts", [])
                     recommendations = patient.get("recommendations", [])
                     rec_id=1
+                    id__recommendaton=1
                     recommendation_message=""
 
 
                     col8,col10,col11=st.columns([5,3,2])
                     
                     for alert in alerts:
-                        #Generating keys for alerts and recommendations randomly
-                        unique_key = f"alert_{uuid.uuid4()}"
-                        unique_key2 = f"recommendation{uuid.uuid4()}"
-                        unique_key3=f"button{uuid.uuid4()}"
                         
                         alert_id=alert['alert_id']
                         #col8
@@ -111,38 +108,39 @@ def show_home_page():
                             for recommendation in recommendations:
                                 if recommendation["alert_id"] == alert["alert_id"]:
                                     rec_id=recommendation["alert_id"]
+                                    id__recommendaton=recommendation['id_recommendations']
                                     recommendation_message=recommendation['message']
 
 
                             with st.expander("Recommendations",expanded=False):
                                 st.markdown(recommendation_message,unsafe_allow_html=True)
-                                check_click_button=False
-                                
-                                if st.button("Mark as read",key=unique_key3):
+                                mark_as_read_key=f"{user_info.get("user_id")}{alert['alert_id']}{rec_id}"
+                                if st.button("Mark as read",key=mark_as_read_key):
                                     new_status="Consulted"
                                     updated_alert = {
                                         "alert_type": alert['alert_type'],
                                         "message": alert['message'],
                                         "status": new_status,
-                                        "user_id": user_info.get("user_id")
+                                        "user_id": patient.get("user_id")
                                     }
-                                    check_click_button=True
                                     tws.update_alert(alert_id,updated_alert)
                         #col11               
                         with col11:
                             with st.expander("Write report"):
-                                doctor_report=st.text_area(label="Write",value="",key=unique_key)  
-                                updated_recommendation = {
-                                    "message": recommendation_message,
-                                    "alert_id": alert['alert_id'],
-                                    "user_id": user_info.get("user_id"),
-                                    "doctor_report":doctor_report
-                                }
-                                
-                                if st.button("▶ **Send**",key=unique_key2):
-                                    tws.update_recommendation(rec_id,updated_recommendation)
-                                       
-                                            
+                                text_area_key=f"{user_info.get("user_id")}{alert['alert_id']}{rec_id}00"
+
+                                doctor_report=st.text_area(label="Write",value="",key=text_area_key)  
+
+                                send_key=f"{user_info.get("user_id")}{alert['alert_id']}{rec_id}0000"
+                                if st.button("▶ **Send**",key=send_key):
+                                    updated_recommendation = {
+                                        "message": recommendation_message,
+                                        "alert_id": alert['alert_id'],
+                                        "user_id": patient.get("user_id"),
+                                        "doctor_report":doctor_report
+                                    }
+                                    tws.update_recommendation(id__recommendaton,updated_recommendation)
+                                                  
                     # WhatsApp call button
                     patient_whatsapp_number = f"+1{patient['phone_number']}"
                     if st.button(f"📞 Appeler {patient['name']}", key=f"call_{patient['user_id']}"):
@@ -151,6 +149,7 @@ def show_home_page():
                     st.markdown("</div>", unsafe_allow_html=True)
 
     else:
+        user_info = tws.get_user_info(st.session_state["user_type"], st.session_state["email"])
         # For patients, display their alerts and recommendations
         alerts = user_info.get("alerts", [])
         recommendations = user_info.get("recommendations", [])
@@ -177,21 +176,25 @@ def show_home_page():
                     if recommendation["alert_id"] == alert["alert_id"]:
                         rec_id=recommendation["alert_id"]
                         st.markdown(f"- {recommendation['message']}")
-                        dotor_report=recommendation['doctor_report']
+                        doctor_report=recommendation['doctor_report']
             with col6:
                 if alert['status']=="new alert":
                     st.markdown(f"**Not consulted**")
                 else:
                     st.success("Consulted")
                 
-                #Si le medecin a effectué un rapport sur l'alert  
-                if len(doctor_report)>1:
-                    st.download_button(
-                        label="Doctor report",
-                        data=doctor_report,
-                        file_name='rapport_du_medcin.pdf',
-                        mime='text/plain'
-                    )
+                #Handle the doctor report's button (Si le medecin a effectué un rapport sur l'alert )
+                if(type(doctor_report)==str):
+                    if len(doctor_report)>1:                        
+                        doctor_report_key=f"doctor_report{user_info.get("user_id")}{alert.get("alert_id")}"
+                        st.download_button(
+                            label="Doctor report",
+                            key=doctor_report_key,
+                            data=doctor_report,
+                            file_name='rapport_du_medcin.pdf',
+                            mime='text/plain'
+                        )
+
                 #If the patient is cured
                 if st.button('Cured',key=alert["alert_id"]):
                     st.success("Cured")
@@ -200,7 +203,6 @@ def show_home_page():
                     # Refresh the user's session
                     email = st.session_state["email"]
                     st.session_state.user_info = tws.get_updated_user(email)
-                    st.rerun()
 
             st.markdown("---")
 
@@ -259,7 +261,7 @@ def show_home_page():
                     email = st.session_state["email"]
                     st.session_state.user_info = tws.get_updated_user(email)
                 
-                    st.rerun()
+                    
          
         
         #If the predict's buttton has been clicked
@@ -271,7 +273,7 @@ def show_home_page():
             st.subheader("💡 Recommended Precautions")
             for rec in st.session_state.recommendations:
                 st.write(f"- {rec}")
-       
+        st.rerun()  
 
 
 
