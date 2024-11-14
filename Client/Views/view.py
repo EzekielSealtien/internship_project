@@ -1,5 +1,8 @@
 import streamlit as st
 from Client.Functions_ import talk_with_server as tws
+#For generate unique key
+import uuid
+
 
 
 def show_home_page():
@@ -7,19 +10,7 @@ def show_home_page():
     st.markdown("""
         <style>
         .stApp {
-            background-color: #add8e6; /* Light blue background */
-        }
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .profile-button {
-            background-color: #007bff;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
+            background-color: #add8e6;
         }
         .patient-frame {
             border: 2px solid #007bff;
@@ -28,23 +19,29 @@ def show_home_page():
             margin: 10px 0;
             background-color: #f0f8ff;
         }
+        .profile-button {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
         </style>
     """, unsafe_allow_html=True)
-
+    
     user_info = st.session_state.get("user_info", None)
     if not user_info:
         st.error("You are not logged in.")
         st.stop()
 
-    # Welcome message
-    st.markdown(f"<h1 style='text-align: center;'>Bienvenue {user_info['name']} </h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center;'>Welcome, {user_info['name']} </h1>", unsafe_allow_html=True)
     
-    # Profile and logout buttons
+    # Profile and Logout Buttons
     col1, col2 = st.columns([6, 4])
     with col2:
         col3, col4 = st.columns([4, 5])
         with col3:
-            if st.button("Voir profil", key="profile_button"):
+            if st.button("Voir Profil", key="profile_button"):
                 st.experimental_set_query_params(page="profile")
                 st.rerun()
         with col4:
@@ -57,8 +54,11 @@ def show_home_page():
 
     user_type = st.session_state.user_type
 
+    if 'button_mark_as_read' not in st.session_state:
+        st.session_state.button_mark_as_read="button_mark_as_read"
     # If the user is a doctor, display their patients
     if user_type == "Doctor":
+
         st.subheader("👩‍⚕️ Patients Associés")
         
         # Fetch patients' details associated with the doctor
@@ -68,49 +68,213 @@ def show_home_page():
         if not patients:
             st.info("Aucun patient associé.")
         else:
-            # Display each patient in a frame
             for patient in patients:
                 with st.container():
                     st.markdown("<div class='patient-frame'>", unsafe_allow_html=True)
-                    
-                    # Patient details
-                    st.write(f"**Nom**: {patient['name']} ")
-                    st.write(f"**Téléphone**: {patient['phone_number']} ")
+                    st.write(f"**Nom**: {patient['name']}")
+                    st.write(f"**Téléphone**: {patient['phone_number']}")
                     st.write(f"**Email**: {patient['email']} 📧")
-                    st.write(f"**Date de Naissance**: {patient['date_of_birth']} ")
-                    
+                    st.write(f"**Date de Naissance**: {patient['date_of_birth']}")
+
                     # Health data
                     health_data = patient.get('health_data', {})
-                    st.write("###  Données de Santé")
+                    st.write("### Données de Santé")
                     st.write(f"Fréquence Cardiaque: {health_data.get('heart_rate', 'N/A')}")
                     st.write(f"Pression Artérielle: {health_data.get('blood_pressure', 'N/A')}")
-                    st.write(f" Niveau d'Oxygène: {health_data.get('oxygen_level', 'N/A')}")
-                    st.write(f" Température: {health_data.get('temperature', 'N/A')}")
-                    
-                    # Alerts
-                    st.write("### 📢 Alertes")
-                    alerts = patient.get("alerts", [])
-                    if alerts:
-                        for alert in alerts:
-                            st.write(f"- {alert['alert_type']} ⚠️: {alert['message']} (Status: {alert['status']})")
-                    else:
-                        st.write("Aucune alerte pour ce patient.")
+                    st.write(f"Niveau d'Oxygène: {health_data.get('oxygen_level', 'N/A')}")
+                    st.write(f"Température: {health_data.get('temperature', 'N/A')}")
 
+                    # Alerts
+                    st.write("### 📢 Alerts")
+                    
+                    alerts = patient.get("alerts", [])
+                    recommendations = patient.get("recommendations", [])
+                    rec_id=1
+                    recommendation_message=""
+
+
+                    col8,col10,col11=st.columns([5,3,2])
+                    
+                    for alert in alerts:
+                        #Generating keys for alerts and recommendations randomly
+                        unique_key = f"alert_{uuid.uuid4()}"
+                        unique_key2 = f"recommendation{uuid.uuid4()}"
+                        unique_key3=f"button{uuid.uuid4()}"
+                        
+                        alert_id=alert['alert_id']
+                        #col8
+                        with col8:
+                            st.markdown(f"- {alert['alert_type']} {alert['message']} <br> <br> ", unsafe_allow_html=True)
+
+                        #col10
+                        with col10:
+                            for recommendation in recommendations:
+                                if recommendation["alert_id"] == alert["alert_id"]:
+                                    rec_id=recommendation["alert_id"]
+                                    recommendation_message=recommendation['message']
+
+
+                            with st.expander("Recommendations",expanded=False):
+                                st.markdown(recommendation_message,unsafe_allow_html=True)
+                                check_click_button=False
+                                
+                                if st.button("Mark as read",key=unique_key3):
+                                    new_status="Consulted"
+                                    updated_alert = {
+                                        "alert_type": alert['alert_type'],
+                                        "message": alert['message'],
+                                        "status": new_status,
+                                        "user_id": user_info.get("user_id")
+                                    }
+                                    check_click_button=True
+                                    tws.update_alert(alert_id,updated_alert)
+                        #col11               
+                        with col11:
+                            with st.expander("Write report"):
+                                doctor_report=st.text_area(label="Write",value="",key=unique_key)  
+                                updated_recommendation = {
+                                    "message": recommendation_message,
+                                    "alert_id": alert['alert_id'],
+                                    "user_id": user_info.get("user_id"),
+                                    "doctor_report":doctor_report
+                                }
+                                
+                                if st.button("▶ **Send**",key=unique_key2):
+                                    tws.update_recommendation(rec_id,updated_recommendation)
+                                       
+                                            
                     # WhatsApp call button
                     patient_whatsapp_number = f"+1{patient['phone_number']}"
                     if st.button(f"📞 Appeler {patient['name']}", key=f"call_{patient['user_id']}"):
                         st.success(f"[Lancer un appel WhatsApp](https://wa.me/{patient_whatsapp_number})")
                     
                     st.markdown("</div>", unsafe_allow_html=True)
+
     else:
         # For patients, display their alerts and recommendations
-        st.write("### 📢 Alertes")
-        for alert in user_info.get("alerts", []):
-            st.write(f"- {alert['alert_type']} ⚠️: {alert['message']} (Status: {alert['status']})")
+        alerts = user_info.get("alerts", [])
+        recommendations = user_info.get("recommendations", [])
+        doctor_report=""
+        #Declaration of session variables
+        if 'disease_name' not in st.session_state:
+            st.session_state.disease_name=""
+        if 'disease_description' not in st.session_state:
+            st.session_state.disease_description=""
+        if 'recommendations' not in st.session_state:
+            st.session_state.recommendations=[]
+        if "check" not in st.session_state:
+            st.session_state.check=False
+        
+        st.write("### 📢 Alerts")
+        for alert in alerts:
+            st.markdown(f"**Alert Type**: {alert['alert_type']} ⚠️")
+            st.markdown(f"**Message**: {alert['message']}")
+            rec_id=1
+            col5,col6=st.columns([6,4])
+            with col5:
+                st.write("💡 **Recommendations**:")
+                for recommendation in recommendations:
+                    if recommendation["alert_id"] == alert["alert_id"]:
+                        rec_id=recommendation["alert_id"]
+                        st.markdown(f"- {recommendation['message']}")
+                        dotor_report=recommendation['doctor_report']
+            with col6:
+                if alert['status']=="new alert":
+                    st.markdown(f"**Not consulted**")
+                else:
+                    st.success("Consulted")
+                
+                #Si le medecin a effectué un rapport sur l'alert  
+                if len(doctor_report)>1:
+                    st.download_button(
+                        label="Doctor report",
+                        data=doctor_report,
+                        file_name='rapport_du_medcin.pdf',
+                        mime='text/plain'
+                    )
+                #If the patient is cured
+                if st.button('Cured',key=alert["alert_id"]):
+                    st.success("Cured")
+                    tws.delete_alert(alert["alert_id"])
+                    
+                    # Refresh the user's session
+                    email = st.session_state["email"]
+                    st.session_state.user_info = tws.get_updated_user(email)
+                    st.rerun()
 
-        st.write("### 💡 Recommandations")
-        for recommendation in user_info.get("recommendations", []):
-            st.write(f"- {recommendation['id_recommendations']} : {recommendation['message']}")
+            st.markdown("---")
+
+        # Disease prediction for patients
+        st.write("### Predict Disease")
+        symptoms_list = [
+            "itching", "skin rash", "nodal skin eruptions", "continuous sneezing",
+            "shivering", "chills", "joint pain", "stomach pain", "acidity",
+            "ulcers on tongue", "muscle wasting", "vomiting", "burning micturition",
+            "spotting urination", "fatigue", "weight gain", "anxiety",
+            "cold hands and feet", "mood swings", "weight loss", "restlessness"
+        ]
+
+        selected_symptoms = st.multiselect("Select your symptoms:", symptoms_list)
+        list_of_17_symptoms = selected_symptoms + [0] * (17 - len(selected_symptoms))
+        list_of_17_symptoms = list_of_17_symptoms[:17]
+
+        if st.button("Predict Disease"):
+            if not selected_symptoms:
+                st.warning("Please select at least one symptom.")
+            else:
+                # Send symptoms to FastAPI for prediction
+                result = tws.predict_disease(list_of_17_symptoms)
+                
+                if result:
+                    st.subheader("🩺 Disease Prediction Result")
+                    st.session_state.disease_name=result['disease_name']
+                    st.session_state.disease_description=result['disease_description']
+                    st.session_state.check=True
+
+                    myList=[]
+                    for rec in result['recommendations']:
+                        myList.append(rec)
+                    
+                    st.session_state.recommendations=myList
+
+                    alert_data = {
+                        "alert_type": "Danger",
+                        "message": f"You have {result['disease_name']}",
+                        "status": "new alert",
+                        "user_id": user_info.get("user_id")
+                    }
+                    new_alert = tws.create_alert(alert_data)
+                    if new_alert:
+                        alert_id = new_alert.get("alert_id")
+                        combined_recommendations = " ; ".join(result['recommendations'])
+                        recommendation_data = {
+                            "message": combined_recommendations,
+                            "alert_id": alert_id,
+                            "user_id": user_info.get("user_id"),
+                            "doctor_report":""
+                        }
+                        tws.create_recommendation(recommendation_data)
+                    
+                    # Refresh the user's session
+                    email = st.session_state["email"]
+                    st.session_state.user_info = tws.get_updated_user(email)
+                
+                    st.rerun()
+         
+        
+        #If the predict's buttton has been clicked
+        if st.session_state.check: 
+            st.subheader("🩺 Disease Prediction Result")
+            st.write(f"**Disease Name**: {st.session_state.disease_name}")
+            st.write(f"**Description**: {st.session_state.disease_description}")
+            
+            st.subheader("💡 Recommended Precautions")
+            for rec in st.session_state.recommendations:
+                st.write(f"- {rec}")
+       
+
+
+
 
 def show_profile_page():
     # Set page background color

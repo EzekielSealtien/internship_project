@@ -45,6 +45,9 @@ if not conn:
     raise Exception("Database connection could not be established. Please check your environment variables.")
 
 # Define Pydantic models
+class SymptomsRequest(BaseModel):
+    list_symptoms: list
+
 class Users(BaseModel):
     name: str
     email: str
@@ -87,6 +90,7 @@ class recommendation(BaseModel):
     message: str
     alert_id: int
     user_id: int
+    doctor_report:str
 
 class recommendationResponse(recommendation):
     id_recommendation: int
@@ -175,6 +179,29 @@ def create_alert(alert: Alerts):
         print(f"Error creating alert: {e}")
         return None
 
+def create_recommendation(recommendation: recommendation):
+    """
+    Inserts a new recommendation into the recommendations table.
+    """
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                INSERT INTO recommendations (message, alert_id, user_id,doctor_report)
+                VALUES (%s, %s, %s,%s)
+                RETURNING id_recommendations, message, alert_id, user_id,doctor_report
+                """,
+                (recommendation.message, recommendation.alert_id, recommendation.user_id,recommendation.doctor_report)
+            )
+            new_recommendation = cursor.fetchone()
+            conn.commit()
+            return new_recommendation
+    except Exception as e:
+        conn.rollback()
+        print(f"Error creating recommendation: {e}")
+        return None
+    
+    
 # Function to update health data for a user
 def update_user_data_health(id_user, new_user_data_health: Health_data):
     try:
@@ -214,7 +241,7 @@ def get_user_full_info(email: str):
                 SELECT 
                     u.user_id, u.name, u.email, u.password_hash, u.phone_number, u.date_of_birth, d.doctor_id,d.name as doctor_name,d.email as doctor_email,d.specialization,d.phone_number as doctor_phone_number,
                     h.heart_rate, h.blood_pressure, h.oxygen_level, h.temperature,
-                    r.id_recommendations, r.message AS recommendation_message,
+                    r.id_recommendations, r.message AS recommendation_message,r.alert_id as alert_id_rec,r.doctor_report,
                     a.alert_id, a.alert_type, a.message AS alert_message, a.status
                 FROM users u
                 LEFT JOIN health_data h ON u.user_id = h.user_id
@@ -255,23 +282,28 @@ def get_user_full_info(email: str):
                 "recommendations": [],
                 "alerts": []
             }
-            existing_ids = {rec["id_recommendations"] for rec in user_info["recommendations"]}
+            existing_rec_ids = {rec["id_recommendations"] for rec in user_info["recommendations"]}
+            existing_alert_ids = {alert["alert_id"] for alert in user_info["alerts"]}
 
-            # Ajouter les recommandations et les alertes
+            # Add recommendations and alerts
             for row in rows:
-                if row["id_recommendations"] and row["id_recommendations"] not in existing_ids:
+                if row["id_recommendations"] and row["id_recommendations"] not in existing_rec_ids:
                     user_info["recommendations"].append({
                         "id_recommendations": row["id_recommendations"],
-                        "message": row["recommendation_message"]
+                        "message": row["recommendation_message"],
+                        "alert_id":row["alert_id_rec"],
+                        "doctor_report":row["doctor_report"]
                     })
-                    existing_ids.add(row["id_recommendations"])
-                if row["alert_id"]:
+                    existing_rec_ids.add(row["id_recommendations"])
+                
+                if row["alert_id"] and row["alert_id"] not in existing_alert_ids:
                     user_info["alerts"].append({
                         "alert_id": row["alert_id"],
                         "alert_type": row["alert_type"],
                         "message": row["alert_message"],
                         "status": row["status"]
                     })
+                    existing_alert_ids.add(row["alert_id"])
 
             return user_info
 
@@ -339,20 +371,22 @@ def doctor_info(doctor_email):
     finally:
         cursor.close()
         
-# Retrieve all the users' info of a doctor, along with their health data and alerts
+# Retrieve all the users' info of a doctor, along with their health data, alerts, and recommendations
 def get_user_details_by_doctor(doctor_id: int):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Query to fetch users assigned to a specific doctor with JOINs for health data and alerts
+            # Query to fetch users assigned to a specific doctor with JOINs for health data, alerts, and recommendations
             cursor.execute(
                 """
                 SELECT 
                     u.user_id, u.name, u.email, u.phone_number, u.date_of_birth, u.doctor_id,
                     h.heart_rate, h.blood_pressure, h.oxygen_level, h.temperature,
-                    a.alert_id, a.alert_type, a.message AS alert_message, a.status
+                    a.alert_id, a.alert_type, a.message AS alert_message, a.status,
+                    r.id_recommendations, r.message AS recommendation_message, r.alert_id AS alert_id_rec, r.doctor_report
                 FROM users u
                 LEFT JOIN health_data h ON u.user_id = h.user_id
                 LEFT JOIN alerts a ON u.user_id = a.user_id
+                LEFT JOIN recommendations r ON a.alert_id = r.alert_id
                 WHERE u.doctor_id = %s
                 """,
                 (doctor_id,)
@@ -383,7 +417,8 @@ def get_user_details_by_doctor(doctor_id: int):
                             "oxygen_level": row["oxygen_level"],
                             "temperature": row["temperature"]
                         },
-                        "alerts": []
+                        "alerts": [],
+                        "recommendations": []
                     }
 
                 # Add alerts if they exist
@@ -396,12 +431,23 @@ def get_user_details_by_doctor(doctor_id: int):
                         "status": row["status"]
                     })
 
+                # Add recommendations if they exist
+                recommendation_id = row["id_recommendations"]
+                if recommendation_id:
+                    patients[user_id]["recommendations"].append({
+                        "id_recommendations": recommendation_id,
+                        "message": row["recommendation_message"],
+                        "alert_id": row["alert_id_rec"],
+                        "doctor_report": row["doctor_report"]
+                    })
+
             # Return the list of patients with their full information
             return list(patients.values())
 
     except Exception as e:
         print(f"Error retrieving user details: {e}")
         return None
+
 
 
 # Function to update the alerts table when a doctor sees the alert of a user
@@ -437,3 +483,51 @@ def update_alert(alert_id: int, updated_alert: Alerts):
         print(f"Error updating alert: {e}")
         conn.rollback()
         return None
+
+def update_recommendation(id_recommendations: int, updated_recommendation: dict):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE recommendations
+                SET message = %s, doctor_report = %s, alert_id = %s, user_id = %s
+                WHERE id_recommendations = %s
+                RETURNING id_recommendations, message, doctor_report, alert_id, user_id
+                """,
+                (
+                    updated_recommendation['message'],
+                    updated_recommendation.get('doctor_report'),
+                    updated_recommendation['alert_id'],
+                    updated_recommendation['user_id'],
+                    id_recommendations
+                )
+            )
+            updated_rec = cursor.fetchone()
+            conn.commit()
+            return updated_rec
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating recommendation: {e}")
+        return None
+
+
+def delete_alert(alert_id: int):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM alerts
+                WHERE alert_id = %s
+                RETURNING alert_id
+                """,
+                (alert_id,)
+            )
+            deleted_alert = cursor.fetchone()
+            conn.commit()
+            return deleted_alert is not None
+    except Exception as e:
+        conn.rollback()
+        print(f"Error deleting alert: {e}")
+        return False
+
+

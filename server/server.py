@@ -1,9 +1,14 @@
 import Functions_.commands as cmd
 from fastapi import FastAPI, HTTPException
 from typing import Optional, List
+from Functions_.model import predd
+import pickle
+
 
 app = FastAPI()
 base_url = "http://localhost:8000"
+path="./Functions_/downloaded-model/skops-iw9h_jza.pkl"
+
 
 # Route to create a new    
 @app.post("/user/create_user", response_model=Optional[cmd.UserResponse])
@@ -15,6 +20,8 @@ def create_new_user(user: cmd.Users):
         return new_user
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating user: {str(e)}")
+
+
 
 
 # Route to get full user info including health data, recommendations, and alerts   
@@ -65,6 +72,17 @@ def create_alert(alert: cmd.Alerts):
         raise HTTPException(status_code=500, detail=f"Error creating alert: {str(e)}")
 
 
+@app.post("/user/create_recommendation", response_model=Optional[cmd.recommendationResponse])
+def create_recommendation(recommendation: cmd.recommendation):
+    try:
+        new_recommendation = cmd.create_recommendation(recommendation)
+        if new_recommendation is None:
+            raise HTTPException(status_code=400, detail="Failed to create recommendation")
+        return new_recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating recommendation: {str(e)}")
+    
+    
 # Route to update an alert  
 @app.put("/user/update_alert/{alert_id}", response_model=Optional[cmd.AlertsResponse])
 def update_alert(alert_id: int, updated_alert: cmd.Alerts):
@@ -75,6 +93,16 @@ def update_alert(alert_id: int, updated_alert: cmd.Alerts):
         return updated_alert_record
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating alert: {str(e)}")
+
+@app.put("/user/update_recommendation/{id_recommendations}", response_model=Optional[cmd.recommendationResponse])
+def update_recommendation(id_recommendations: int, updated_recommendation: cmd.recommendation):
+    try:
+        updated_recommendation_record = cmd.update_recommendation(id_recommendations, updated_recommendation)
+        if updated_recommendation_record is None:
+            raise HTTPException(status_code=404, detail="Recommendation not found or could not be updated")
+        return updated_recommendation_record
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating recommendation: {str(e)}")
 
 
 # Route to create a new doctor  
@@ -123,4 +151,27 @@ def get_users_by_doctor(doctor_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving users' info: {str(e)}")
 
+@app.delete("/user/delete_alert/{alert_id}")
+def delete_alert(alert_id: int):
+    try:
+        deleted_alert = cmd.delete_alert(alert_id)
+        if deleted_alert:
+            return {"message": "Alert deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Alert not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting alert: {str(e)}")
 
+
+#Route for predicting the disease based on symptoms
+@app.post("/predict_disease")
+def predict_disease(list_symptoms:cmd.SymptomsRequest):
+    pickled_model=pickle.load(open(path,'rb'))
+    try:
+        response=predd(pickled_model,list_symptoms.list_symptoms)
+        if not response:
+            raise HTTPException(status_code=404, detail="No disease detected")
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"Error predicting the disease : info:{str(e)}")
+        

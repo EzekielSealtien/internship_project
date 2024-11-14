@@ -1,6 +1,11 @@
-import requests
-url = "http://localhost:8000/user/get_user_full_info"
-email={"email":"takam@gmail.com"}
-response = requests.get(url,params=email)
+import streamlit as st
 
-print("Response------------>:", response.json())
+
+if st.button('report'):
+    st.session_state.report=True
+    with st.expander("Rediger le rapport"):
+        print('yes')
+        if st.button('Envoyer'):
+            print('Vive IA')
+            
+
