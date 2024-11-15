@@ -56,6 +56,15 @@ def show_home_page():
 
     if 'button_mark_as_read' not in st.session_state:
         st.session_state.button_mark_as_read="button_mark_as_read"
+    
+    if 'disease_name' not in st.session_state:
+        st.session_state.disease_name=""
+    if 'disease_description' not in st.session_state:
+        st.session_state.disease_description=""
+    if 'recommendations' not in st.session_state:
+        st.session_state.recommendations=[]
+    if "check" not in st.session_state:
+        st.session_state.check=False
     # If the user is a doctor, display their patients
     if user_type == "Doctor":
 
@@ -150,19 +159,11 @@ def show_home_page():
 
     else:
         user_info = tws.get_user_info(st.session_state["user_type"], st.session_state["email"])
+
         # For patients, display their alerts and recommendations
         alerts = user_info.get("alerts", [])
         recommendations = user_info.get("recommendations", [])
         doctor_report=""
-        #Declaration of session variables
-        if 'disease_name' not in st.session_state:
-            st.session_state.disease_name=""
-        if 'disease_description' not in st.session_state:
-            st.session_state.disease_description=""
-        if 'recommendations' not in st.session_state:
-            st.session_state.recommendations=[]
-        if "check" not in st.session_state:
-            st.session_state.check=False
         
         st.write("### 📢 Alerts")
         for alert in alerts:
@@ -183,15 +184,14 @@ def show_home_page():
                 else:
                     st.success("Consulted")
                 
-                #Handle the doctor report's button (Si le medecin a effectué un rapport sur l'alert )
-                if(type(doctor_report)==str):
-                    if len(doctor_report)>1:                        
-                        doctor_report_key=f"doctor_report{user_info.get("user_id")}{alert.get("alert_id")}"
+                key_download=f"key{alert["alert_id"]}"
+                if type(doctor_report)==str:
+                    if len(doctor_report)>1:
                         st.download_button(
-                            label="Doctor report",
-                            key=doctor_report_key,
+                            label="Download Doctor report",
+                            key=key_download,
                             data=doctor_report,
-                            file_name='rapport_du_medcin.pdf',
+                            file_name="Rapport_du_medecin",
                             mime='text/plain'
                         )
 
@@ -203,8 +203,9 @@ def show_home_page():
                     # Refresh the user's session
                     email = st.session_state["email"]
                     st.session_state.user_info = tws.get_updated_user(email)
-
+                    st.rerun()
             st.markdown("---")
+
 
         # Disease prediction for patients
         st.write("### Predict Disease")
@@ -260,10 +261,9 @@ def show_home_page():
                     # Refresh the user's session
                     email = st.session_state["email"]
                     st.session_state.user_info = tws.get_updated_user(email)
+                    st.rerun()
                 
                     
-         
-        
         #If the predict's buttton has been clicked
         if st.session_state.check: 
             st.subheader("🩺 Disease Prediction Result")
@@ -273,7 +273,6 @@ def show_home_page():
             st.subheader("💡 Recommended Precautions")
             for rec in st.session_state.recommendations:
                 st.write(f"- {rec}")
-        st.rerun()  
 
 
 
