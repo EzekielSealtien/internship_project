@@ -37,10 +37,10 @@ def get_all_info_user(email: str):
 
 
 # Route to update health data for a user 
-@app.put("/user/update_health_data/{user_id}", response_model=Optional[cmd.Health_data])
-def update_user_health_data(user_id: int, health_data: cmd.Health_data):
+@app.put("/user/update_health_data", response_model=Optional[cmd.Health_data])
+def update_user_health_data(health_data: cmd.Health_data):
     try:
-        updated_data = cmd.update_user_data_health(user_id, health_data)
+        updated_data = cmd.update_user_data_health(health_data)
         if updated_data is None:
             raise HTTPException(status_code=400, detail="Failed to update health data")
         return updated_data
@@ -104,6 +104,15 @@ def update_recommendation(id_recommendations: int, updated_recommendation: cmd.r
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating recommendation: {str(e)}")
 
+@app.put("/user/assign_doctor")
+def assign_doctor_to_user(doctor_assignment: cmd.DoctorAssignment):
+    try:
+        updated_user = cmd.update_user_doctor(doctor_assignment)
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found or could not update doctor assignment")
+        return updated_user
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating user's doctor assignment: {str(e)}")
 
 # Route to create a new doctor  
 @app.post("/doctor/create_doctor", response_model=Optional[cmd.DoctorResponse])

@@ -1,7 +1,6 @@
 import streamlit as st
 from Client.Functions_ import talk_with_server as tws
 #For generate unique key
-import uuid
 
 
 
@@ -36,23 +35,47 @@ def show_home_page():
 
     st.markdown(f"<h1 style='text-align: center;'>Welcome, {user_info['name']} </h1>", unsafe_allow_html=True)
     
-    # Profile and Logout Buttons
-    col1, col2 = st.columns([6, 4])
-    with col2:
-        col3, col4 = st.columns([4, 5])
-        with col3:
-            if st.button("Voir Profil", key="profile_button"):
-                st.experimental_set_query_params(page="profile")
-                st.rerun()
-        with col4:
-            if st.button("🔒 Deconnexion", key="deconnexion_button"):
-                st.session_state.clear()
-                st.session_state["is_logged_in"] = False
-                st.success("Vous êtes maintenant déconnecté.")
-                st.experimental_set_query_params(page="login")
-                st.rerun()
-
     user_type = st.session_state.user_type
+
+    # Profile and Logout Buttons
+    col1, col2 = st.columns([4, 6])
+    with col2:
+        if user_type=="Doctor":    
+
+            col3, col4,col5 = st.columns([2,4,4])
+            with col3:
+                if st.button("Profil", key="profile_button"):
+                    st.query_params['page']="profile"
+                    st.rerun()
+            with col4:
+                if st.button("➕ Add patient",key="add_patient"):
+                    st.query_params.update(page="add_patient")
+                    st.rerun()
+            
+            with col5:
+                if st.button("🔒 Deconnexion", key="deconnexion_button"):
+                    st.session_state.clear()
+                    st.session_state["is_logged_in"] = False
+                    st.success("Vous êtes maintenant déconnecté.")
+                    st.query_params.update(page="login")
+                    st.rerun()
+        else:
+            
+            col3,col5 = st.columns([4,6])
+            with col3:
+                if st.button("Voir Profil", key="profile_button"):
+                    st.query_params.update(page="profile")
+                    st.rerun()
+            with col5:
+                if st.button("🔒 Deconnexion", key="deconnexion_button"):
+                    st.session_state.clear()
+                    st.session_state["is_logged_in"] = False
+                    st.success("Vous êtes maintenant déconnecté.")
+                    st.query_params.update(page="login")
+                    st.rerun()
+            
+    
+    
 
     if 'button_mark_as_read' not in st.session_state:
         st.session_state.button_mark_as_read="button_mark_as_read"
@@ -103,14 +126,16 @@ def show_home_page():
                     recommendation_message=""
 
 
-                    col8,col10,col11=st.columns([5,3,2])
+                    col8,col10,col11=st.columns([3,3,4])
                     
                     for alert in alerts:
                         
                         alert_id=alert['alert_id']
                         #col8
                         with col8:
-                            st.markdown(f"- {alert['alert_type']} {alert['message']} <br> <br> ", unsafe_allow_html=True)
+                            message=alert['message']
+                            mes=message[8:-1]
+                            st.markdown(f"- {alert['alert_type']}: affected by {mes} <br>  ", unsafe_allow_html=True)
 
                         #col10
                         with col10:
@@ -133,9 +158,10 @@ def show_home_page():
                                         "user_id": patient.get("user_id")
                                     }
                                     tws.update_alert(alert_id,updated_alert)
+                                    st.toast("Notification sent successfully")
                         #col11               
                         with col11:
-                            with st.expander("Write report"):
+                            with st.expander("Write report",expanded=False, icon="💡"):
                                 text_area_key=f"{user_info.get("user_id")}{alert['alert_id']}{rec_id}00"
 
                                 doctor_report=st.text_area(label="Write",value="",key=text_area_key)  
@@ -149,6 +175,8 @@ def show_home_page():
                                         "doctor_report":doctor_report
                                     }
                                     tws.update_recommendation(id__recommendaton,updated_recommendation)
+                                    st.toast("report sent successfully!")
+
                                                   
                     # WhatsApp call button
                     patient_whatsapp_number = f"+1{patient['phone_number']}"
@@ -276,7 +304,6 @@ def show_home_page():
 
 
 
-
 def show_profile_page():
     # Set page background color
     st.markdown(
@@ -318,24 +345,33 @@ def show_profile_page():
                 st.write("### 💊 Données de Santé")
                 health_data = user_info['health_data']
                 
-                # Editable health data fields
-                heart_rate = st.number_input("Heart Rate ", value=health_data.get('heart_rate', 0))
-                blood_pressure = st.number_input("Blood Pressure ", value=health_data.get('blood_pressure', 0))
-                oxygen_level = st.number_input("Oxygen Level ", value=health_data.get('oxygen_level', 0))
-                temperature = st.number_input("Temperature ", value=health_data.get('temperature', 0))
+                    
 
-                # Button to update health data
+                # Editable health data fields
+                heart_rate = st.number_input("Heart Rate ", value=14)
+                blood_pressure = st.number_input("Blood Pressure ", value=50)
+                oxygen_level = st.number_input("Oxygen Level ", value=90)
+                temperature = st.number_input("Temperature ", value=37)
+
+
+
+                # Button to update or create health data
                 if st.button("Mettre à jour les données de santé"):
                     updated_data = {
                         "heart_rate": heart_rate,
                         "blood_pressure": blood_pressure,
                         "oxygen_level": oxygen_level,
-                        "temperature": temperature
+                        "temperature": temperature,
+                        "user_id":user_info['user_id']
                     }
-                    response = tws.update_health_data(user_info['user_id'], updated_data)
+                    if health_data['heart_rate']==None:
+                        response=tws.create_health_data(updated_data)
+                    else:
+                        response = tws.update_health_data(updated_data)
+                    
                     if response:
-                        st.success("Données de santé mises à jour avec succès! 🎉")
-                        st.rerun()
+                        st.toast("Health data updated  successfully!")
+
                     else:
                         st.error("Erreur lors de la mise à jour des données de santé.")
 
@@ -363,64 +399,6 @@ def show_profile_page():
     col11, col21, col31 = st.columns([1, 2, 1])
     with col21:
         if st.button("Return to the Home Page"):
-            st.experimental_set_query_params(page="home")
+            st.query_params.update(page="home")
             st.rerun()
 
-def show_login_page():
-    st.title("Login")
-    user_type = st.selectbox("Are you a:", ["Patient", "Doctor"])
-
-    with st.form("login_form"):
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Login")
-
-        if submit:
-            user_info = tws.login_user(email, password, user_type)
-            if user_info:
-                st.success("Login successful!")
-                st.session_state["email"] = email
-                st.session_state["user_type"] = user_type
-                st.session_state["user_info"] = user_info
-                st.experimental_set_query_params(page="home")
-                st.rerun()
-            else:
-                st.error("Invalid credentials.")
-
-def show_signup_page():
-    st.title("Sign Up")
-    user_type = st.selectbox("Are you a:", ["Patient", "Doctor"])
-
-    with st.form("sign_up_form"):
-        name = st.text_input("Name")
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        phone_number = st.text_input("Phone Number")
-        date_of_birth = st.text_input("Date of Birth")
-        if user_type == "Doctor":
-            specialization = st.text_input("Specialization")
-        
-        submit = st.form_submit_button("Register")
-
-        if submit:
-            user_data = {
-                "name": name,
-                "email": email,
-                "password_hash": password,
-                "date_of_birth": date_of_birth,
-                "phone_number": phone_number
-            }
-            if user_type == "Doctor":
-                user_data["specialization"] = specialization
-                if "date_of_birth" in user_data:
-                    del user_data["date_of_birth"]
-            
-            response = tws.create_user(user_data, user_type)
-            if "user_id" in response or "doctor_id" in response:
-                st.success("Registration successful! Please log in.")
-                st.session_state["email"] = email
-                st.session_state["user_type"] = user_type
-                st.experimental_set_query_params(page="login")
-                st.rerun()
-            else:
-                st.error("Registration failed.")

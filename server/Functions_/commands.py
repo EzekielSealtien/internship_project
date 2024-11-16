@@ -1,7 +1,7 @@
 from datetime import date
 import os
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional,Union
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extras import RealDictCursor
@@ -65,7 +65,12 @@ class Doctor(BaseModel):
     specialization: Optional[str] = None
     phone_number: str
 
+        
 class DoctorResponse(Doctor):
+    doctor_id: int
+    
+class DoctorAssignment(BaseModel):
+    email:str
     doctor_id: int
 
 class Alerts(BaseModel):
@@ -82,6 +87,7 @@ class Health_data(BaseModel):
     blood_pressure: int
     oxygen_level: int
     temperature: int
+    user_id:int
 
 class Health_dataRespons(Health_data):
     data_id: int
@@ -203,7 +209,7 @@ def create_recommendation(recommendation: recommendation):
     
     
 # Function to update health data for a user
-def update_user_data_health(id_user, new_user_data_health: Health_data):
+def update_user_data_health(new_user_data_health: Health_data):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -221,7 +227,7 @@ def update_user_data_health(id_user, new_user_data_health: Health_data):
                     new_user_data_health.blood_pressure,
                     new_user_data_health.oxygen_level,
                     new_user_data_health.temperature,
-                    id_user
+                    new_user_data_health.user_id
                 )
             )
             updated_data_health = cursor.fetchone()
@@ -371,6 +377,28 @@ def doctor_info(doctor_email):
     finally:
         cursor.close()
         
+        # Function to update the doctor_id for a user
+def update_user_doctor(doctor_assignment:DoctorAssignment):
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                """
+                UPDATE users 
+                SET doctor_id = %s 
+                WHERE email = %s 
+                RETURNING user_id, doctor_id
+                """,
+                (doctor_assignment.doctor_id, doctor_assignment.email)
+            )
+            updated_user = cursor.fetchone()
+            conn.commit()
+            return updated_user
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating user's doctor_id: {e}")
+        return None
+
+
 # Retrieve all the users' info of a doctor, along with their health data, alerts, and recommendations
 def get_user_details_by_doctor(doctor_id: int):
     try:

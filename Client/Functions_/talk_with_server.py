@@ -1,4 +1,5 @@
 import streamlit as st
+import bcrypt
 
 import requests
 
@@ -34,6 +35,18 @@ def create_recommendation(recommendation_data):
         print(f"Error creating recommendation: {e}")
     return None
 
+def create_health_data(updated_data):
+    try:
+        response=requests.post(f'{BASE_URL}/user/create_health_data',json=updated_data)
+        if response.status_code==200:
+            return response.json()
+    except Exception as e:
+        print(f"Error creating or updating health_data:{e}")
+
+
+def verify_password(stored_hash, entered_password):
+    return bcrypt.checkpw(entered_password.encode('utf-8'), stored_hash.encode('utf-8'))
+
 
 # Helper function to authenticate user
 def login_user(email, password, user_type):
@@ -45,7 +58,7 @@ def login_user(email, password, user_type):
 
     if response.status_code == 200:
         user_info = response.json()
-        if user_info["password_hash"] == password:
+        if verify_password(user_info["password_hash"],password):
             return user_info
     return None
 
@@ -56,6 +69,24 @@ def get_updated_user(email):
         user_info = response.json()
         return user_info
     return None
+
+
+def assign_doctor_to_user(email: str, doctor_id: int):
+
+    url = f"{BASE_URL}/user/assign_doctor"
+    payload = {"email":email,"doctor_id": doctor_id}
+    
+    try:
+        response = requests.put(url, json=payload)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Failed to assign doctor. Status code: {response.status_code}, Message: {response.text}")
+            return None
+    except Exception as e:
+        print(f"Error assigning doctor to user: {e}")
+        return None
+
 
 
 
@@ -69,9 +100,9 @@ def get_user_info(user_type, email):
     return response.json() if response.status_code == 200 else None
 
 
-def update_health_data(user_id,health_data):
+def update_health_data(health_data):
     
-    url = f"{BASE_URL}/user/update_health_data/{user_id}"
+    url = f"{BASE_URL}/user/update_health_data"
     try:
         response = requests.put(url, json=health_data)
         if response.status_code == 200:
