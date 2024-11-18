@@ -8,14 +8,19 @@ BASE_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="Medical System", page_icon="🌻", layout="centered")
 
-# Helper function to create a new user
-def create_user(user_data, user_type):
-    if user_type == "Patient":
-        url = f"{BASE_URL}/user/create_user"
-    else:
-        url = f"{BASE_URL}/doctor/create_doctor"
+# Helper function to create a new doctor
+def create_doctor(doctor_data):
+    url = f"{BASE_URL}/doctor/create_doctor"
+    response = requests.post(url, json=doctor_data)
+    return response.json()
+
+# Helper function to create a new patient
+def create_patient(user_data):
+    url = f"{BASE_URL}/user/create_user"
+
     response = requests.post(url, json=user_data)
     return response.json()
+
 
 def create_alert(alert_data):
     try:
@@ -48,12 +53,22 @@ def verify_password(stored_hash, entered_password):
     return bcrypt.checkpw(entered_password.encode('utf-8'), stored_hash.encode('utf-8'))
 
 
-# Helper function to authenticate user
-def login_user(email, password, user_type):
-    if user_type == "Patient":
-        url = f"{BASE_URL}/user/get_user_full_info"
-    else:
-        url = f"{BASE_URL}/doctor/get_doctor_info"
+# Helper function to authenticate patient
+def login_patient(email, password):
+    url = f"{BASE_URL}/user/get_user_full_info"
+
+    response = requests.get(url, params={"email": email})
+
+    if response.status_code == 200:
+        user_info = response.json()
+        if verify_password(user_info["password_hash"],password):
+            return user_info
+    return None
+
+# Helper function to authenticate doctor
+def login_doctor(email, password):
+    url = f"{BASE_URL}/doctor/get_doctor_info"
+
     response = requests.get(url, params={"email": email})
 
     if response.status_code == 200:
@@ -87,15 +102,15 @@ def assign_doctor_to_user(email: str, doctor_id: int):
         print(f"Error assigning doctor to user: {e}")
         return None
 
-
-
+# Helper function to fetch user profile data(profile)
+def get_patient_info(email):
+    url = f"{BASE_URL}/user/get_user_full_info"
+    response = requests.get(url, params={"email": email})
+    return response.json() if response.status_code == 200 else None
 
 # Helper function to fetch user profile data
-def get_user_info(user_type, email):
-    if user_type == "Patient":
-        url = f"{BASE_URL}/user/get_user_full_info"
-    else:
-        url = f"{BASE_URL}/doctor/get_doctor_info"
+def get_doctor_info(email):
+    url = f"{BASE_URL}/doctor/get_doctor_info"
     response = requests.get(url, params={"email": email})
     return response.json() if response.status_code == 200 else None
 

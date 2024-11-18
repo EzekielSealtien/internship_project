@@ -19,5 +19,5 @@ def show_add_patient_page():
     col11, col21, col31 = st.columns([1, 2, 1])
     with col21:
         if st.button("Return to the Home Page"):
-            st.query_params.update(page="home")
+            st.query_params['page']='home_page_doctor'
             st.rerun()

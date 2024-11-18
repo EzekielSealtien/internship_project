@@ -22,8 +22,6 @@ def create_new_user(user: cmd.Users):
         raise HTTPException(status_code=500, detail=f"Error creating user: {str(e)}")
 
 
-
-
 # Route to get full user info including health data, recommendations, and alerts   
 @app.get("/user/get_user_full_info")
 def get_all_info_user(email: str):
