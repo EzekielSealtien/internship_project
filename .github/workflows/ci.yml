@@ -1,0 +1,68 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Étape 1 : Cloner le dépôt
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Étape 2 : Installer Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.4'
+
+      # Étape 3 : Installer les dépendances
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Étape 4 : Lancer le backend (FastAPI avec Uvicorn)
+      - name: Start Backend (server.py)
+        working-directory: server
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: database-intership.c3yuioockcec.us-east-1.rds.amazonaws.com
+          DB_PORT: 5432
+        run: |
+          nohup uvicorn server:app --host 0.0.0.0 --port 8000 &
+
+      # Étape 5 : Lancer le frontend (Streamlit)
+      - name: Start Frontend (main.py)
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: database-intership.c3yuioockcec.us-east-1.rds.amazonaws.com
+          DB_PORT: 5432
+        run: |
+          nohup streamlit run main.py &
