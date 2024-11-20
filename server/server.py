@@ -10,7 +10,7 @@ base_url = "http://localhost:8000"
 path="./Functions_/downloaded-model/skops-iw9h_jza.pkl"
 
 
-# Route to create a new    
+# Route to create a new    ----->Good
 @app.post("/user/create_user", response_model=Optional[cmd.UserResponse])
 def create_new_user(user: cmd.Users):
     try:
@@ -22,7 +22,7 @@ def create_new_user(user: cmd.Users):
         raise HTTPException(status_code=500, detail=f"Error creating user: {str(e)}")
 
 
-# Route to get full user info including health data, recommendations, and alerts   
+# Route to get full user info including health data, recommendations, and alerts   ----->Good
 @app.get("/user/get_user_full_info")
 def get_all_info_user(email: str):
     try:
@@ -34,7 +34,7 @@ def get_all_info_user(email: str):
         raise HTTPException(status_code=500, detail=f"Error retrieving user's info: {str(e)}")
 
 
-# Route to update health data for a user 
+# Route to update health data for a user ----->Good
 @app.put("/user/update_health_data", response_model=Optional[cmd.Health_data])
 def update_user_health_data(health_data: cmd.Health_data):
     try:
@@ -46,7 +46,7 @@ def update_user_health_data(health_data: cmd.Health_data):
         raise HTTPException(status_code=500, detail=f"Error updating health data: {str(e)}")
 
 
-# Route to create a new health data record  
+# Route to create a new health data record  ------->Good
 @app.post("/user/create_health_data", response_model=Optional[cmd.Health_dataRespons])
 def create_health_data(health_data: cmd.Health_data):
     try:
@@ -58,7 +58,7 @@ def create_health_data(health_data: cmd.Health_data):
         raise HTTPException(status_code=500, detail=f"Error creating health data: {str(e)}")
 
 
-# Route to create a new alert  
+# Route to create a new alert  --------->Good
 @app.post("/user/create_alert", response_model=Optional[cmd.AlertsResponse])
 def create_alert(alert: cmd.Alerts):
     try:
@@ -69,7 +69,7 @@ def create_alert(alert: cmd.Alerts):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating alert: {str(e)}")
 
-
+#Good----------->
 @app.post("/user/create_recommendation", response_model=Optional[cmd.recommendationResponse])
 def create_recommendation(recommendation: cmd.recommendation):
     try:
@@ -81,7 +81,7 @@ def create_recommendation(recommendation: cmd.recommendation):
         raise HTTPException(status_code=500, detail=f"Error creating recommendation: {str(e)}")
     
     
-# Route to update an alert  
+# Route to update an alert   -----< Good
 @app.put("/user/update_alert/{alert_id}")
 def update_alert(alert_id: int, updated_alert: cmd.Alerts):
     try:
@@ -92,6 +92,7 @@ def update_alert(alert_id: int, updated_alert: cmd.Alerts):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating alert: {str(e)}")
 
+#-----Good  
 @app.put("/user/update_recommendation/{id_recommendations}")
 def update_recommendation(id_recommendations: int, updated_recommendation: cmd.recommendation):
     try:
@@ -102,6 +103,7 @@ def update_recommendation(id_recommendations: int, updated_recommendation: cmd.r
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating recommendation: {str(e)}")
 
+#---------------->Good
 @app.put("/user/assign_doctor")
 def assign_doctor_to_user(doctor_assignment: cmd.DoctorAssignment):
     try:
@@ -112,7 +114,7 @@ def assign_doctor_to_user(doctor_assignment: cmd.DoctorAssignment):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating user's doctor assignment: {str(e)}")
 
-# Route to create a new doctor  
+# Route to create a new doctor  ---------->Good
 @app.post("/doctor/create_doctor", response_model=Optional[cmd.DoctorResponse])
 def create_new_doctor(doctor: cmd.Doctor):
     try:
@@ -124,7 +126,7 @@ def create_new_doctor(doctor: cmd.Doctor):
         raise HTTPException(status_code=500, detail=f"Error creating doctor: {str(e)}")
 
 
-# Route to get doctor's   
+# Route to get doctor's   -------->Good
 @app.get("/doctor/get_doctor_info", response_model=Optional[cmd.DoctorResponse])
 def get_doctor_info(email: str):
     try:
@@ -135,6 +137,7 @@ def get_doctor_info(email: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving doctor's info: {str(e)}")
 
+#-------------------->Good
 # Route to get doctor's info by user's ID  
 @app.get("/user/get_doctor_info/{user_id}", response_model=Optional[cmd.Doctor])
 def get_doctor_info_by_user_id(user_id: int):
@@ -147,7 +150,7 @@ def get_doctor_info_by_user_id(user_id: int):
         raise HTTPException(status_code=500, detail=f"Error retrieving doctor's info: {str(e)}")
 
 
-# Route to get all users assigned to a doctor  
+# Route to get all users assigned to a doctor  ---------Good
 @app.get("/doctors/get_users_by_doctor/{doctor_id}")
 def get_users_by_doctor(doctor_id: int):
     try:
@@ -158,6 +161,7 @@ def get_users_by_doctor(doctor_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving users' info: {str(e)}")
 
+#-----------------Good
 @app.delete("/user/delete_alert/{alert_id}")
 def delete_alert(alert_id: int):
     try:
@@ -170,7 +174,7 @@ def delete_alert(alert_id: int):
         raise HTTPException(status_code=500, detail=f"Error deleting alert: {str(e)}")
 
 
-#Route for predicting the disease based on symptoms
+#Route for predicting the disease based on symptoms  ------>Good
 @app.post("/predict_disease")
 def predict_disease(list_symptoms:cmd.SymptomsRequest):
     pickled_model=pickle.load(open(path,'rb'))

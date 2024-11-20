@@ -11,7 +11,7 @@ def show_signup_doctor_page():
         phone_number = st.text_input("Phone Number")
         date_of_birth = st.text_input("Date of Birth")
         specialization = st.text_input("Specialization")
-        
+    
         submit = st.form_submit_button("Register")
 
         if submit:

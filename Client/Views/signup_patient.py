@@ -35,3 +35,9 @@ def show_signup_patient_page():
                 st.rerun()
             else:
                 st.error("Registration failed.")
+                
+    col1,col2=st.columns([6,4])
+    with col2:
+        if st.button('sign up as a doctor'):
+                st.query_params['page']='signup_doctor'
+                st.rerun()

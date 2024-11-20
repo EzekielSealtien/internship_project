@@ -42,10 +42,10 @@ def show_profile_patient_page():
             health_data = user_info['health_data']
             
             # Editable health data fields
-            heart_rate = st.number_input("Heart Rate ", value=0)
-            blood_pressure = st.number_input("Blood Pressure ", value=0)
-            oxygen_level = st.number_input("Oxygen Level ", value=0)
-            temperature = st.number_input("Temperature ", value=0)
+            heart_rate = st.number_input("Heart Rate ", value=health_data['heart_rate'])
+            blood_pressure = st.number_input("Blood Pressure ", value=health_data['blood_pressure'])
+            oxygen_level = st.number_input("Oxygen Level ", value=health_data['oxygen_level'])
+            temperature = st.number_input("Temperature ", value=health_data['temperature'])
             
             # Button to update or create health data
             if st.button("Mettre à jour les données de santé"):

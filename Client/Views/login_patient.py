@@ -22,8 +22,12 @@ def show_login_patient_page():
                 st.error("Invalid credentials.")
     col1,col2=st.columns([6,4])
     with col2:
-        col3,col4=st.columns([5,5])
-        with col4:
+        col3,col4=st.columns([4,6])
+        with col3:
             if st.button('Sign up'):
                 st.query_params['page']='signup_patient'
+                st.rerun()
+        with col4:
+            if st.button('Log in as a doctor'):
+                st.query_params['page']='login_doctor'
                 st.rerun()
