@@ -5,14 +5,13 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      - main 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     services:
         options: >-
-          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 10s
           --health-retries 10
