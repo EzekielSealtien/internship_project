@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline Frontend
 
 on:
   push:
@@ -13,15 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_HOST_AUTH_METHOD: trust  # Autoriser les connexions sans authentification
-        ports:
-          - 5433:5432  # Port externe : 5433, Port interne : 5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -45,25 +36,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Étape 4 : Lancer le backend (FastAPI avec Uvicorn)
-      - name: Start Backend (server.py)
-        env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: localhost  # La base de données est hébergée localement dans le conteneur
-          DB_PORT: 5433
-        run: |
-          nohup uvicorn server:app --reload &
-
       # Étape 5 : Lancer le frontend (Streamlit)
       - name: Start Frontend (main.py)
-        env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: localhost
-          DB_PORT: 5433
         run: |
           nohup streamlit run main.py &
 
