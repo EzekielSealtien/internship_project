@@ -47,7 +47,7 @@ jobs:
 
       # Étape 4 : Lancer le backend (FastAPI avec Uvicorn)
       - name: Start Backend (server.py)
-        working-directory: server
+        working-directory: backend
         env:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
