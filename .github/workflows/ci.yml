@@ -1,20 +1,33 @@
 name: CI/CD Pipeline Frontend
+
 on:
   push:
     branches:
       - main
   pull_request:
     branches:
-      - main 
+      - main
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_HOST_AUTH_METHOD: trust  # Autoriser les connexions sans authentification
+        ports:
+          - 5433:5432  # Port externe : 5433, Port interne : 5432
         options: >-
+          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 10s
           --health-retries 10
+
     steps:
       # Étape 1 : Cloner le dépôt
       - name: Checkout Code
