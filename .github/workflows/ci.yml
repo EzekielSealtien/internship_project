@@ -67,3 +67,15 @@ jobs:
           DB_PORT: 5433
         run: |
           nohup streamlit run main.py &
+
+
+      - name: Deploy to Elastic Beanstalk
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: "us-east-1"
+        run: |
+          pip install awsebcli
+          eb init -p python-3.9 internship_project_ --region us-east-1
+          eb deploy
+
