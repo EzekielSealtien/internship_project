@@ -1,13 +1,13 @@
-import Functions_.commands as cmd
+import backend.Functions_.commands as cmd
 from fastapi import FastAPI, HTTPException
 from typing import Optional, List
-from Functions_.model import predd
+from backend.Functions_.model import predd
 import pickle
 
 
 app = FastAPI()
 base_url = "http://localhost:8000"
-path="./Functions_/downloaded-model/skops-iw9h_jza.pkl"
+path=".backend/Functions_/downloaded-model/skops-iw9h_jza.pkl"
 
 
 # Route to create a new    ----->Good
