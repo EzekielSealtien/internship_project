@@ -54,7 +54,7 @@ jobs:
           DB_HOST: localhost  # La base de données est hébergée localement dans le conteneur
           DB_PORT: 5433
         run: |
-          nohup uvicorn server:app --host 0.0.0.0 --port 8000 &
+          nohup uvicorn server:app --reload &
 
       # Étape 5 : Lancer le frontend (Streamlit)
       - name: Start Frontend (main.py)
