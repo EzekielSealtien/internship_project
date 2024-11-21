@@ -10,7 +10,6 @@ import Client.Views_.home_page_patient as show_home_page_patient
 import Client.Views_.home_page_doctor as show_home_page_doctor
 
 
-
 page =  st.query_params.get("page", ["login"])
 if page == "profile_patient":
     show_profile_patient_page.show_profile_patient_page()

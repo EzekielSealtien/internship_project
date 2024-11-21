@@ -4,7 +4,7 @@ import bcrypt
 import requests
 
 # Base URL for the FastAPI server
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://0.0.0.0:8000"
 
 st.set_page_config(page_title="Medical System", page_icon="🌻", layout="centered")
 
