@@ -6,8 +6,7 @@ import requests
 # Base URL for the FastAPI server
 #BASE_URL = "http://127.0.0.1:8000"
 
-BASE_URL = "https://ezekielinternship-gacug0f8c5f7h6gw.canadacentral-01.azurewebsites.net"
-
+BASE_URL = "https://ezekielinternship-gacug0f8c5f7h6gw.canadacentral-01.azurewebsites.net:8000"
 
 st.set_page_config(page_title="Medical System", page_icon="🌻", layout="centered")
 
