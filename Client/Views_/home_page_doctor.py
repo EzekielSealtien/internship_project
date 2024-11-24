@@ -43,7 +43,7 @@ def show_home_page_doctor():
         col3, col4,col5 = st.columns([2,4,4])
         with col3:
             if st.button("Profil", key="profile_button"):
-                st.query_params['page']="profile_doctor"
+                st.query_params['page']="profil_doctor"
                 st.rerun()
         with col4:
             if st.button("➕ Add patient",key="add_patient"):

@@ -3,7 +3,6 @@ from Client.Functions_ import talk_with_server as tws
 #For generate unique key
 
 
-st.query_params
 def show_home_page_patient():
     
     if 'disease_name' not in st.session_state:
@@ -40,8 +39,10 @@ def show_home_page_patient():
     user_info = st.session_state.get("user_info", None)
     if not user_info:
         st.error("You are not logged in.")
+        if st.button('Log in'):
+            st.query_params.update(page="login_patient")
+            st.rerun()
         st.stop()
-
     st.markdown(f"<h1 style='text-align: center;'>Welcome, {user_info['name']} </h1>", unsafe_allow_html=True)
     
 

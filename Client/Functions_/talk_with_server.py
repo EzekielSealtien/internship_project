@@ -4,7 +4,9 @@ import bcrypt
 import requests
 
 # Base URL for the FastAPI server
-BASE_URL = "http://0.0.0.0:8000"
+#BASE_URL = "http://127.0.0.1:8000"
+
+BASE_URL = "https://ezekielinternship-gacug0f8c5f7h6gw.canadacentral-01.azurewebsites.net"
 
 st.set_page_config(page_title="Medical System", page_icon="🌻", layout="centered")
 
@@ -186,13 +188,11 @@ def get_users_by_doctor(doctor_id):
 
 
 def predict_disease(symptoms):
-
     url = f"{BASE_URL}/predict_disease"
-    # Convert the list of symptoms to a comma-separated string
-    data_to_send={"list_symptoms":symptoms}
+    data_to_send = {"list_symptoms": symptoms}
+
     try:
         response = requests.post(url, json=data_to_send)
-        # Check if the response was successful
         if response.status_code == 200:
             return response.json()
         else:
