@@ -8,6 +8,7 @@ import requests
 
 BASE_URL = "https://ezekielinternship-gacug0f8c5f7h6gw.canadacentral-01.azurewebsites.net"
 
+
 st.set_page_config(page_title="Medical System", page_icon="🌻", layout="centered")
 
 # Helper function to create a new doctor
